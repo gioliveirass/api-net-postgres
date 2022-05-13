@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "CElKe/pFEihVHKs+r7YGWtXiFac4Js7quevLwgWSuF8=",
+  "Source": "crud_net_postgres",
+  "BasePath": "_content/crud_net_postgres",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
