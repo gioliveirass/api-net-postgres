@@ -1,6 +1,8 @@
-﻿using crud_net_postgres.Models;
+﻿using crud_net_postgres.Context;
+using crud_net_postgres.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System.Data;
 
@@ -10,18 +12,27 @@ namespace crud_net_postgres.Controllers
     [ApiController]
     public class DepartmentController : ControllerBase
     {
+        private readonly DataContext _myContext;
         private readonly IConfiguration _configuration;
-        public DepartmentController(IConfiguration configuration)
+        public DepartmentController(IConfiguration configuration, DataContext myContext)
         {
+            _myContext = myContext; 
             _configuration = configuration;
         }
+
         [HttpGet]
-        public JsonResult Get()
+        public async Task<IActionResult> Get()
         {
+            var response = await _myContext.Departments.ToListAsync();
+
+            // var response = await _myContext.Departments.Where(x => x.Name == "Teste").ToListAsync();
+
+            /*
             string query = @"
                 select ""ID"", ""Name""
                 from public.""Departments""
             ";
+            
 
             DataTable table = new DataTable();
             string sqlDataSource = _configuration.GetConnectionString("DefaultConnection");
@@ -37,13 +48,20 @@ namespace crud_net_postgres.Controllers
                     myConn.Close();
                 }
             }
-
+            
             return new JsonResult(table);
+            */
+            return Ok(response);
         }
 
         [HttpPost]
-        public JsonResult Post(Department department)
+        public async Task<IActionResult> Post(Department department)
         {
+            department.ID = Guid.NewGuid();
+            await _myContext.AddAsync(department);
+            await _myContext.SaveChangesAsync();
+
+            /*
             string query = @"
                 insert into public.""Departments""(""ID"", ""Name"")
                 values (@GuidValue, @DepartmentName)
@@ -67,11 +85,17 @@ namespace crud_net_postgres.Controllers
             }
 
             return new JsonResult("Added Successfully!");
+            */
+            return Ok();
         }
 
         [HttpPut]
-        public JsonResult Put(Department department)
+        public async Task<IActionResult> Put(Department department)
         {
+            _myContext.Update(department);
+            await _myContext.SaveChangesAsync();
+
+            /*
             string query = @"
                 update public.""Departments""
                 set ""Name""=@DepartmentName
@@ -95,11 +119,25 @@ namespace crud_net_postgres.Controllers
                 }
             }
             return new JsonResult("Updated Successfully!");
+            */
+            return Ok();
         }
 
         [HttpDelete("{id}")]
-        public JsonResult Delete(Guid id)
+        public async Task<IActionResult> Delete(Guid id)
         {
+            var response = await _myContext.Departments.
+                AsQueryable()
+                .FirstOrDefaultAsync(x => x.ID == id);
+
+            if(response == null)
+            {
+                return NotFound();
+            }
+
+            _myContext.Remove(response);
+            await _myContext.SaveChangesAsync();
+            /*
             string query = @"
                 delete from public.""Departments""
                 where ""ID""=@DepartmentGuid
@@ -121,6 +159,9 @@ namespace crud_net_postgres.Controllers
                 }
             }
             return new JsonResult("Deleted Successfully!");
+            */
+
+            return Ok();
         }
     }
 
