@@ -1,6 +1,8 @@
-﻿using crud_net_postgres.Models;
+﻿using crud_net_postgres.Context;
+using crud_net_postgres.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System.Data;
 
@@ -10,14 +12,18 @@ namespace crud_net_postgres.Controllers
     [ApiController]
     public class EmployeeController : ControllerBase
     {
+        private readonly DataContext _myContext;
         private readonly IConfiguration _configuration;
-        public EmployeeController(IConfiguration configuration)
+        public EmployeeController(IConfiguration configuration, DataContext myContext)
         {
+            _myContext = myContext;
             _configuration = configuration;
         }
         [HttpGet]
-        public JsonResult Get()
+        public async Task<IActionResult> Get()
         {
+            var response = await _myContext.Employees.ToListAsync();
+            /*
             string query = @"
                 select ""ID"", 
                         ""Name"", 
@@ -43,11 +49,19 @@ namespace crud_net_postgres.Controllers
             }
 
             return new JsonResult(table);
+            */
+
+            return Ok(response);
         }
 
         [HttpPost]
-        public JsonResult Post(Employee employee)
+        public async Task<IActionResult> Post(Employee employee)
         {
+            employee.ID = Guid.NewGuid();
+            await _myContext.AddAsync(employee);
+            await _myContext.SaveChangesAsync();
+
+            /*
             string query = @"
                 insert into public.""Employees""(
                     ""ID"", 
@@ -86,11 +100,18 @@ namespace crud_net_postgres.Controllers
             }
 
             return new JsonResult("Added Successfully!");
+            */
+
+            return Ok();
         }
 
         [HttpPut]
-        public JsonResult Put(Employee employee)
+        public async Task<IActionResult> Put(Employee employee)
         {
+            _myContext.Update(employee);
+            await _myContext.SaveChangesAsync();
+
+            /*
             string query = @"
                 update public.""Employees""
                 set ""Name"" = @Name, 
@@ -120,11 +141,26 @@ namespace crud_net_postgres.Controllers
                 }
             }
             return new JsonResult("Updated Successfully!");
+            */
+            return Ok();
         }
 
         [HttpDelete("{id}")]
-        public JsonResult Delete(Guid id)
+        public async Task<IActionResult> Delete(Guid id)
         {
+            var response = await _myContext.Employees.
+               AsQueryable()
+               .FirstOrDefaultAsync(x => x.ID == id);
+
+            if (response == null)
+            {
+                return NotFound();
+            }
+
+            _myContext.Remove(response);
+            await _myContext.SaveChangesAsync();
+
+            /*
             string query = @"
                 delete from public.""Employees""
                 where ""ID""=@EmployeeGuid
@@ -146,6 +182,8 @@ namespace crud_net_postgres.Controllers
                 }
             }
             return new JsonResult("Deleted Successfully!");
+            */
+            return Ok();
         }
     }
 }
